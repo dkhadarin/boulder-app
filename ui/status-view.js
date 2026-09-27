@@ -1,15 +1,13 @@
-// Status screen: data sync state, the iPhone -> Mac bridge test (phase 0), environment.
+// Status screen: data sync state, the iPhone -> Mac bridge test, backup, environment.
 
-import { esc, longDate, timeAgo } from "./format.js";
-import * as store from "../lib/store.js";
+import { esc, longDate, timeAgo, localToday } from "./format.js";
+import * as bridge from "../lib/bridge.js";
+import { toMarkdown, buildEvent } from "../lib/events.js";
 
-const LOG_KEY = "bridgeLog";
-const NAME_KEY = "shortcutName";
-
-export async function renderStatus(root, { appData, importedAt, onSync, version }) {
-  const shortcutName = (await store.get(NAME_KEY)) || "Boulder Save";
-  const log = (await store.get(LOG_KEY)) || [];
+export async function renderStatus(root, { appData, importedAt, queue, onSync, version }) {
+  const shortcutName = await bridge.shortcutName();
   const d = appData?.data;
+  const open = queue.filter((e) => e.status !== "processed").length;
 
   root.innerHTML = `
     <header class="screen-head"><h1>Status</h1></header>
@@ -20,20 +18,25 @@ export async function renderStatus(root, { appData, importedAt, onSync, version 
         ${row("Synced", timeAgo(importedAt))}
         ${d ? row("Sessions / daily notes", `${d.sessions.length} / ${d.dailies.length}`) : ""}
         ${d ? row("Kilter sends", String(d.kilter?.sends?.length ?? 0)) : ""}
+        ${row("Logs not on the Mac yet", String(open))}
       </article>
       <button class="btn" data-action="sync">Sync from iCloud</button>
       <p class="muted small">Pick <strong>Bouldering &rsaquo; 00_Inbox &rsaquo; App &rsaquo; app-data.json</strong> in iCloud Drive.</p>
     </section>
     <section>
-      <h2>Bridge test</h2>
+      <h2>Shortcut</h2>
       <article class="card">
-        <p class="muted small">Sends a test file through the Shortcut into <strong>00_Inbox/App/</strong> on the Mac.</p>
+        <p class="muted small">Every log is handed to this Shortcut, which saves it to <strong>00_Inbox/App/</strong> in iCloud.</p>
         <label class="field-label" for="shortcut">Shortcut name</label>
-        <input id="shortcut" class="field" value="${esc(shortcutName)}" autocapitalize="off" autocorrect="off">
-        <button class="btn" data-action="shortcut">Save test file via Shortcut</button>
-        <button class="btn-secondary" data-action="share">Fallback: share test file</button>
-        <h3 class="small-head">Attempts on this phone</h3>
-        <div class="bridge-log">${log.length ? log.map((e) => `<div>${esc(e.time)} · ${esc(e.method)} · ${esc(e.file)}</div>`).join("") : "<div>No attempts yet</div>"}</div>
+        <input id="shortcut" class="field-input" value="${esc(shortcutName)}" autocapitalize="off" autocorrect="off">
+        <button class="btn-secondary" data-action="test">Send a test file</button>
+      </article>
+    </section>
+    <section>
+      <h2>Backup</h2>
+      <article class="card">
+        <p class="muted small">All logs on this phone plus the last synced data, as one JSON file.</p>
+        <button class="btn-secondary" data-action="backup">Export backup</button>
       </article>
     </section>
     <section>
@@ -47,26 +50,26 @@ export async function renderStatus(root, { appData, importedAt, onSync, version 
     </section>`;
 
   root.querySelector("[data-action=sync]").addEventListener("click", onSync);
-  root.querySelector("#shortcut").addEventListener("change", (ev) => store.set(NAME_KEY, ev.target.value.trim()));
-  root.querySelector("[data-action=shortcut]").addEventListener("click", async () => {
-    const name = root.querySelector("#shortcut").value.trim();
-    await store.set(NAME_KEY, name);
-    const event = testEvent("shortcut");
-    await addLog(event, "shortcut");
-    window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(name)}&input=text&text=${encodeURIComponent(JSON.stringify(event))}`;
+  root.querySelector("#shortcut").addEventListener("change", (ev) => bridge.setShortcutName(ev.target.value));
+  root.querySelector("[data-action=test]").addEventListener("click", async () => {
+    await bridge.setShortcutName(root.querySelector("#shortcut").value);
+    const ev = buildEvent("test", localToday(), { method: "shortcut", standalone: isStandalone(), online: navigator.onLine });
+    await bridge.sendViaShortcut(toMarkdown(ev, "Test file from the Boulder app. Can be deleted."));
   });
-  root.querySelector("[data-action=share]").addEventListener("click", async () => {
-    const event = testEvent("share");
-    const file = new File([event.content], event.file, { type: "text/markdown" });
-    if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
-      alert("Sharing files is not supported here.");
-      return;
-    }
+  root.querySelector("[data-action=backup]").addEventListener("click", async () => {
+    const backup = { exportedAt: new Date().toISOString(), version, queue, appData, importedAt, shortcut: await bridge.shortcutName() };
+    const file = new File([JSON.stringify(backup, null, 2)], `boulder-backup-${localToday()}.json`, { type: "application/json" });
     try {
-      await navigator.share({ files: [file] });
-      await addLog(event, "share");
+      if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] });
+      else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(file);
+        a.download = file.name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }
     } catch (err) {
-      if (err.name !== "AbortError") alert(`Share failed: ${err.message}`);
+      if (err.name !== "AbortError") alert(err.message);
     }
   });
 }
@@ -77,29 +80,3 @@ const flag = (label, on) =>
   `<div class="list-row"><div class="list-name">${esc(label)}</div><div class="list-value ${on ? "yes" : "no"}">${on ? "yes" : "no"}</div></div>`;
 
 export const isStandalone = () => window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-
-async function addLog(event, method) {
-  const log = (await store.get(LOG_KEY)) || [];
-  await store.set(LOG_KEY, [{ time: new Date().toLocaleTimeString(), method, file: event.file }, ...log].slice(0, 20));
-}
-
-// One test event in the same shape the real events will have.
-function testEvent(method) {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-  const id = crypto.randomUUID ? crypto.randomUUID() : String(now.getTime());
-  const content = [
-    "---",
-    "event: test",
-    `id: ${id}`,
-    `created: ${now.toISOString()}`,
-    `method: ${method}`,
-    `standalone: ${isStandalone()}`,
-    `online: ${navigator.onLine}`,
-    "---",
-    "Test file from the Boulder app (spike). Can be deleted.",
-    "",
-  ].join("\n");
-  return { file: `${stamp} test.md`, content };
-}

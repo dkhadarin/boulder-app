@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every deploy.
-const VERSION = "v3-processor";
+const VERSION = "v4-log";
 const SHELL = [
   "./",
   "index.html",
@@ -8,10 +8,16 @@ const SHELL = [
   "lib/progress.js",
   "lib/store.js",
   "lib/warnings.js",
+  "lib/events.js",
+  "lib/pending.js",
+  "lib/queue.js",
+  "lib/bridge.js",
   "ui/format.js",
   "ui/charts.js",
   "ui/progress-view.js",
   "ui/status-view.js",
+  "ui/forms.js",
+  "ui/log-view.js",
   "manifest.webmanifest",
   "icons/icon-180.png",
   "icons/icon-192.png",

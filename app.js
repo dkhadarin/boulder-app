@@ -1,19 +1,22 @@
-// Boulder app shell: tabs, data import, rendering.
+// Boulder app shell: tabs, data import, local logs, rendering.
 
 import { computeProgress } from "./lib/progress.js";
+import { withPending, pendingEvents } from "./lib/pending.js";
 import * as store from "./lib/store.js";
+import * as queue from "./lib/queue.js";
 import { localToday, longDate } from "./ui/format.js";
 import { renderProgress, renderEmpty } from "./ui/progress-view.js";
+import { renderLog } from "./ui/log-view.js";
 import { renderStatus } from "./ui/status-view.js";
 
-const VERSION = "0.2 (phase 2)";
+const VERSION = "0.4 (phase 4)";
 const TABS = ["progress", "log", "status"];
 const view = document.getElementById("view");
 const fileInput = document.getElementById("file-input");
 const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
 const params = new URLSearchParams(location.search);
 
-const state = { appData: null, importedAt: null };
+const state = { appData: null, importedAt: null, queue: [] };
 
 // On localhost only: ?today=YYYY-MM-DD to preview another day.
 const today = () => (isLocal && params.get("today")) || localToday();
@@ -29,6 +32,20 @@ async function saveAppData(json) {
   state.importedAt = new Date().toISOString();
   await store.set("appData", json);
   await store.set("importedAt", state.importedAt);
+  state.queue = await queue.reconcile(json.data.events);
+}
+
+// Logs saved on the phone that the Mac has not turned into notes yet.
+const localEvents = () => state.queue.filter((e) => e.status !== "processed").map((e) => e.event);
+
+function currentData(extra = []) {
+  if (!state.appData) return null;
+  return withPending(state.appData.data, [...localEvents(), ...extra]);
+}
+
+function modelWith(extra = []) {
+  const data = currentData(extra);
+  return data ? computeProgress(data, state.appData.manual, today()) : null;
 }
 
 function sync() {
@@ -49,35 +66,35 @@ fileInput.addEventListener("change", async () => {
 });
 
 // ---------- views ----------
-function renderLog(root) {
-  root.innerHTML = `
-    <header class="screen-head"><h1>Log</h1></header>
-    <article class="card empty-card">
-      <h2>Coming in phase 4</h2>
-      <p>Forms for Monday, Thursday, Saturday, home days and the morning check.</p>
-      <p class="muted">Until then: tell Claude after the session, as before.</p>
-    </article>`;
+function route() {
+  const parts = location.hash.slice(1).split("/").map(decodeURIComponent);
+  const tab = TABS.includes(parts[0]) ? parts[0] : "progress";
+  return { tab, rest: parts.slice(1) };
 }
 
-function currentTab() {
-  const tab = location.hash.slice(1);
-  return TABS.includes(tab) ? tab : "progress";
+function go(hash) {
+  if (location.hash === hash) render();
+  else location.hash = hash;
 }
 
-function render() {
-  const tab = currentTab();
+async function render() {
+  const { tab, rest } = route();
   for (const button of document.querySelectorAll(".tab")) {
     button.setAttribute("aria-current", button.dataset.tab === tab ? "page" : "false");
   }
   window.scrollTo(0, 0);
+  state.queue = await queue.all();
   if (tab === "progress") {
     if (!state.appData) renderEmpty(view, sync);
     else {
-      const model = computeProgress(state.appData.data, state.appData.manual, today());
-      renderProgress(view, model, { importedAt: state.importedAt }, sync);
+      const pending = state.appData ? pendingEvents(state.appData.data, localEvents()).length : 0;
+      renderProgress(view, modelWith(), { importedAt: state.importedAt, pending }, sync);
     }
-  } else if (tab === "log") renderLog(view);
-  else renderStatus(view, { ...state, onSync: sync, version: VERSION });
+  } else if (tab === "log") {
+    await renderLog(view, { data: currentData(), today: today(), route: rest, go, modelWith, refresh: render });
+  } else {
+    renderStatus(view, { ...state, onSync: sync, version: VERSION });
+  }
 }
 
 let toastTimer = null;
@@ -91,12 +108,19 @@ function toast(text) {
 
 // ---------- start ----------
 window.addEventListener("hashchange", render);
-window.addEventListener("online", () => currentTab() === "status" && render());
-window.addEventListener("offline", () => currentTab() === "status" && render());
+window.addEventListener("online", () => route().tab === "status" && render());
+window.addEventListener("offline", () => route().tab === "status" && render());
+// Coming back from the Shortcuts app: refresh the statuses.
+// Not while a form is open - that would reset the scroll position mid-typing.
+document.addEventListener("visibilitychange", () => {
+  const { tab, rest } = route();
+  if (document.visibilityState === "visible" && tab === "log" && (!rest.length || rest[0] === "saved")) render();
+});
 
 async function start() {
   state.appData = (await store.get("appData")) || null;
   state.importedAt = (await store.get("importedAt")) || null;
+  state.queue = await queue.all();
 
   // On localhost only: ?import=<url> loads a data file without the picker (for testing).
   if (isLocal && params.get("import")) {

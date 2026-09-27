@@ -27,7 +27,9 @@ export function renderProgress(root, model, meta, onSync) {
     <header class="screen-head">
       <div>
         <h1>Progress</h1>
-        <p class="sub">Data from ${esc(longDate(model.updated))} · synced ${esc(timeAgo(meta.importedAt))}</p>
+        <p class="sub">Data from ${esc(longDate(model.updated))} · synced ${esc(timeAgo(meta.importedAt))}${
+          meta.pending ? ` · <a href="#log">${meta.pending} ${meta.pending === 1 ? "log" : "logs"} not on the Mac yet</a>` : ""
+        }</p>
       </div>
       <button class="btn-small" data-action="sync">Sync</button>
     </header>
