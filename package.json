@@ -1,0 +1,5 @@
+{
+  "name": "boulder-app",
+  "private": true,
+  "type": "module"
+}
