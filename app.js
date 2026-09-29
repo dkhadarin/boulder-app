@@ -9,7 +9,7 @@ import { renderProgress, renderEmpty } from "./ui/progress-view.js";
 import { renderLog } from "./ui/log-view.js";
 import { renderStatus } from "./ui/status-view.js";
 
-const VERSION = "0.4 (phase 4)";
+const VERSION = "0.5";
 const TABS = ["progress", "log", "status"];
 const view = document.getElementById("view");
 const fileInput = document.getElementById("file-input");
@@ -57,8 +57,14 @@ fileInput.addEventListener("change", async () => {
   const file = fileInput.files[0];
   if (!file) return;
   try {
-    await saveAppData(JSON.parse(await file.text()));
-    toast(`Synced - data from ${longDate(state.appData.updated)}`);
+    const json = JSON.parse(await file.text());
+    await saveAppData(json);
+    // iCloud on the phone sometimes hands out an older cached copy of the file.
+    // Logs sent after the file was written can't be in it - say so instead of looking "not synced".
+    const written = json.created ? Date.parse(json.created) : 0;
+    const newer = state.queue.filter((e) => e.status !== "processed" && e.sentAt && Date.parse(e.sentAt) > written).length;
+    const msg = `Synced - file written ${fileTime(json.created)}`;
+    toast(newer ? `${msg}. It is older than ${newer} of your logs - iCloud may still be downloading the new copy: open the Files app, wait a moment, sync again.` : msg, newer ? 9000 : 3500);
     render();
   } catch (err) {
     toast(err instanceof SyntaxError ? "Could not read the file." : err.message);
@@ -88,7 +94,7 @@ async function render() {
     if (!state.appData) renderEmpty(view, sync);
     else {
       const pending = state.appData ? pendingEvents(state.appData.data, localEvents()).length : 0;
-      renderProgress(view, modelWith(), { importedAt: state.importedAt, pending }, sync);
+      renderProgress(view, modelWith(), { importedAt: state.importedAt, fileCreated: state.appData.created, pending }, sync);
     }
   } else if (tab === "log") {
     await renderLog(view, { data: currentData(), today: today(), route: rest, go, modelWith, refresh: render });
@@ -97,13 +103,16 @@ async function render() {
   }
 }
 
+const fileTime = (iso) =>
+  iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "at an unknown time";
+
 let toastTimer = null;
-function toast(text) {
+function toast(text, ms = 3500) {
   const box = document.getElementById("toast");
   box.textContent = text;
   box.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (box.hidden = true), 3500);
+  toastTimer = setTimeout(() => (box.hidden = true), ms);
 }
 
 // ---------- start ----------

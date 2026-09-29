@@ -27,7 +27,7 @@ export function renderProgress(root, model, meta, onSync) {
     <header class="screen-head">
       <div>
         <h1>Progress</h1>
-        <p class="sub">Data from ${esc(longDate(model.updated))} · synced ${esc(timeAgo(meta.importedAt))}${
+        <p class="sub">Data from ${esc(longDate(model.updated))} · file from ${esc(timeAgo(meta.fileCreated))} · synced ${esc(timeAgo(meta.importedAt))}${
           meta.pending ? ` · <a href="#log">${meta.pending} ${meta.pending === 1 ? "log" : "logs"} not on the Mac yet</a>` : ""
         }</p>
       </div>
@@ -65,7 +65,7 @@ export function renderProgress(root, model, meta, onSync) {
       </article>
       <article class="card">
         <h3>Groin</h3>
-        <p class="sub">0-10 · stretch pain goal: below 3</p>
+        <p class="sub">0-10 · limit 2 during exercises, stretch pain goal below 3</p>
         <div data-chart="groin"></div>
       </article>
     </section>
@@ -279,8 +279,12 @@ function charts(root, model) {
     series: [
       { name: "During training", color: "--series-1", points: pick("groin_session") },
       { name: "Stretch test", color: "--series-2", points: stretch },
+      { name: "Adductor exercises", color: "--series-3", points: pick("groin_home") },
     ],
-    thresholds: [{ value: 3, label: "goal below 3" }],
+    thresholds: [
+      { value: 2, label: "limit 2" },
+      { value: 3, label: "stretch goal below 3" },
+    ],
     end,
     emptyText: "No groin values yet - they come with the next session or stretch test.",
   });

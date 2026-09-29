@@ -106,6 +106,7 @@ export const FORMS = {
       { type: "toggle", name: "finger_prehab", label: "Finger prehab", hint: "extensor band + reverse wrist curl" },
       { type: "toggle", name: "adductors", label: "Adductor strength" },
       { type: "text", name: "adductors_detail", label: "Adductors - what and how much", hint: "Band 3x15, Copenhagen 3x20s", last: true, from: "dailies" },
+      { type: "scale", name: "adductors_pain", label: "Groin pain during the adductor exercises", from: 0, to: 10, pain: 2, hint: "decides when the next stage is due" },
       { type: "toggle", name: "mobility", label: "Stretching / mobility" },
       { type: "number", name: "running", label: "Running", unit: "min", step: 5 },
       { type: "text", name: "other", label: "Anything else", hint: "Shoulder band 2x15" },
@@ -494,6 +495,7 @@ export function missing(form, values) {
   if (form.kind === "session" && !filled(values.duration)) out.push("Duration");
   if (form.kind === "home" && !["finger_prehab", "adductors", "mobility", "running", "other", "adductors_detail"].some((k) => filled(values[k]) && values[k] !== false))
     out.push("at least one entry");
+  if (form.kind === "home" && values.adductors === true && !filled(values.adductors_pain)) out.push("Groin pain during the adductor exercises");
   if (form.kind === "morning" && !filled(values.finger_pain) && !filled(values.sleep)) out.push("finger pain or sleep");
   const bad = form.kind === "session" && values.project_name !== undefined && /[\\/:#^[\]|]/.test(values.project_name || "");
   if (bad) out.push("a project name without / : # [ ] |");

@@ -15,6 +15,7 @@ export async function renderStatus(root, { appData, importedAt, queue, onSync, v
       <h2>Data</h2>
       <article class="card list">
         ${row("Data from", appData ? longDate(appData.updated) : "not imported")}
+        ${row("File written on the Mac", appData?.created ? new Date(appData.created).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-")}
         ${row("Synced", timeAgo(importedAt))}
         ${d ? row("Sessions / daily notes", `${d.sessions.length} / ${d.dailies.length}`) : ""}
         ${d ? row("Kilter sends", String(d.kilter?.sends?.length ?? 0)) : ""}
