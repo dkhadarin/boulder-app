@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every deploy.
-const VERSION = "v5-adductor-pain";
+const VERSION = "v6-sessions";
 const SHELL = [
   "./",
   "index.html",
@@ -12,12 +12,14 @@ const SHELL = [
   "lib/pending.js",
   "lib/queue.js",
   "lib/bridge.js",
+  "lib/bases.js",
   "ui/format.js",
   "ui/charts.js",
   "ui/progress-view.js",
   "ui/status-view.js",
   "ui/forms.js",
   "ui/log-view.js",
+  "ui/sessions-view.js",
   "manifest.webmanifest",
   "icons/icon-180.png",
   "icons/icon-192.png",

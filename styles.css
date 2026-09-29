@@ -267,7 +267,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible, .field-input:fo
 /* ---------- tab bar ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: var(--surface); border-top: 1px solid var(--border);
   padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
 }
@@ -400,3 +400,29 @@ select.field-input { appearance: none; -webkit-appearance: none; }
 }
 .saved-title { text-transform: none; letter-spacing: 0; font-size: 19px; color: var(--text); margin: 0 0 8px; }
 .sub a { color: var(--series-1); }
+
+/* ---------- sessions: base tables ---------- */
+.view-chips { display: flex; gap: 6px; overflow-x: auto; margin: 14px -16px 12px; padding: 2px 16px 6px; scrollbar-width: none; }
+.view-chips::-webkit-scrollbar { display: none; }
+.view-chips .chip { flex: none; white-space: nowrap; }
+.chip-count { font-weight: 500; opacity: 0.7; margin-left: 2px; }
+.chip-sep { flex: none; width: 1px; background: var(--grid); margin: 4px 4px; }
+.table-wrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.base-table { border-collapse: separate; border-spacing: 0; min-width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+.base-table th, .base-table td { padding: 10px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+.base-table thead th { font-size: 12px; font-weight: 600; color: var(--text-2); position: sticky; top: 0; background: var(--surface); }
+.base-table tbody tr:last-child th, .base-table tbody tr:last-child td { border-bottom: 0; }
+.base-table .sticky { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--grid); }
+.base-table thead .sticky { z-index: 2; }
+.base-table tbody tr { cursor: pointer; }
+.base-table tbody tr:hover td, .base-table tbody tr:hover th, .base-table tbody tr:focus-visible td, .base-table tbody tr:focus-visible th { background: var(--wash); }
+.base-table tbody tr:focus-visible { outline: 2px solid var(--series-1); outline-offset: -2px; }
+.base-table tbody th { font-weight: 600; }
+.name-date { display: block; }
+.name-rest { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); }
+.name-pending { display: block; font-size: 11px; font-weight: 600; color: var(--text-2); font-style: italic; }
+.base-table .over { color: var(--critical); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

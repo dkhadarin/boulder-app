@@ -8,9 +8,10 @@ import { localToday, longDate } from "./ui/format.js";
 import { renderProgress, renderEmpty } from "./ui/progress-view.js";
 import { renderLog } from "./ui/log-view.js";
 import { renderStatus } from "./ui/status-view.js";
+import { renderSessions } from "./ui/sessions-view.js";
 
-const VERSION = "0.5";
-const TABS = ["progress", "log", "status"];
+const VERSION = "0.6";
+const TABS = ["progress", "sessions", "log", "status"];
 const view = document.getElementById("view");
 const fileInput = document.getElementById("file-input");
 const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
@@ -96,6 +97,8 @@ async function render() {
       const pending = state.appData ? pendingEvents(state.appData.data, localEvents()).length : 0;
       renderProgress(view, modelWith(), { importedAt: state.importedAt, fileCreated: state.appData.created, pending }, sync);
     }
+  } else if (tab === "sessions") {
+    await renderSessions(view, { data: currentData(), route: rest, go });
   } else if (tab === "log") {
     await renderLog(view, { data: currentData(), today: today(), route: rest, go, modelWith, refresh: render });
   } else {
