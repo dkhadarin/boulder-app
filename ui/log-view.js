@@ -11,8 +11,9 @@ import { esc, longDate, shortDate, timeAgo } from "./format.js";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const BOULDER_TYPES = ["volume", "power_endurance", "limit", "project", "technique"];
-const TODAY_FORM = { 0: "volume", 1: "home", 3: "power_endurance", 4: "home", 5: "limit" };
-const CARD_NOTE = { volume: "Mon", power_endurance: "Thu", limit: "Sat", home: "Tue, Fri", morning: "every day", other: "rope, technique, rehab" };
+// Since 2026-10-01: Thursday = limit / project, Saturday = power endurance.
+const TODAY_FORM = { 0: "volume", 1: "home", 3: "limit", 4: "home", 5: "power_endurance" };
+const CARD_NOTE = { volume: "Mon", limit: "Thu", power_endurance: "Sat", home: "Tue, Fri", morning: "every day", other: "rope, technique, rehab" };
 
 // env: { data, today, route, go(hash), modelWith(events), refresh() }
 export async function renderLog(root, env) {
@@ -43,7 +44,7 @@ async function renderHome(root, env) {
     ${suggested ? `<section><h2>Today · ${DAY_NAMES[wd]}</h2>${card(suggested, true)}</section>` : `<section><h2>Today · ${DAY_NAMES[wd]}</h2><p class="muted">Rest day - no bouldering planned.</p></section>`}
     <section>
       <h2>All forms</h2>
-      <div class="form-grid">${["morning", "volume", "power_endurance", "limit", "home", "other"].filter((id) => id !== suggested).map((id) => card(id)).join("")}</div>
+      <div class="form-grid">${["morning", "volume", "limit", "power_endurance", "home", "other"].filter((id) => id !== suggested).map((id) => card(id)).join("")}</div>
     </section>
     <section>
       <h2>Recent logs</h2>

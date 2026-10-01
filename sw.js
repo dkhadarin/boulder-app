@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every deploy.
-const VERSION = "v6-sessions";
+const VERSION = "v7-thu-limit";
 const SHELL = [
   "./",
   "index.html",

@@ -10,7 +10,7 @@ import { renderLog } from "./ui/log-view.js";
 import { renderStatus } from "./ui/status-view.js";
 import { renderSessions } from "./ui/sessions-view.js";
 
-const VERSION = "0.6";
+const VERSION = "0.7";
 const TABS = ["progress", "sessions", "log", "status"];
 const view = document.getElementById("view");
 const fileInput = document.getElementById("file-input");
