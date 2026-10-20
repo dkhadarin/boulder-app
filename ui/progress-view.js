@@ -51,7 +51,7 @@ export function renderProgress(root, model, meta, onSync) {
       <h2>Strength</h2>
       ${chartCard("pullup", "Weighted pull-up", "Added weight per session", target(model.strength, /^Weighted Pull-Up/i))}
       ${chartCard("hangs", "Max hangs 20 mm", "Added weight · training sets and testday", target(model.strength, /^20 ?mm Hang Half/i))}
-      ${chartCard("legraises", "Toes-to-bar & leg raises", "Reps per set", target(model.strength, /^Toes-to-Bar/i))}
+      ${chartCard("toes", "Toes-to-bar", "Reps per set", target(model.strength, /^Toes-to-Bar/i))}
       ${chartCard("lever", "Front lever", "Hold per set in seconds, by variant", target(model.strength, /^Front Lever/i))}
       ${chartCard("pallof", "Pallof press", "Cable weight", target(model.strength, /^Pallof/i))}
       ${chartCard("pushups", "Push-ups", "Reps per set", target(model.strength, /^Push-Ups/i))}
@@ -293,16 +293,15 @@ function charts(root, model) {
     minMax: 10,
     emptyText: "No max hangs yet - they start with the testday and Block 2.",
   });
-  lineChart(chart("legraises"), {
-    label: "Toes-to-bar and leg raises, reps per set",
+  lineChart(chart("toes"), {
+    label: "Toes-to-bar, reps per set",
     series: [
       { name: "Toes-to-bar", color: "--series-1", points: ex.toesToBar.filter((p) => !p.weighted) },
       { name: "Toes-to-bar + ankle weights", color: "--series-2", points: ex.toesToBar.filter((p) => p.weighted) },
-      { name: "Lying leg raises", color: "--series-3", points: ex.lyingLegRaises },
     ],
     format: reps,
     minMax: 10,
-    emptyText: "No leg raises logged yet.",
+    emptyText: "No toes-to-bar logged yet.",
   });
   const variants = [...new Set(ex.frontLever.map((p) => p.variant))];
   lineChart(chart("lever"), {

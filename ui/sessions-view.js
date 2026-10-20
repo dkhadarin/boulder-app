@@ -29,7 +29,6 @@ const LABELS = {
   element_9: "Element 9",
   element_8: "Element 8",
   project: "Project",
-  lying_leg_raises: "Leg raises",
   ab_wheel: "Ab wheel",
   location: "Where",
   week: "Week",
