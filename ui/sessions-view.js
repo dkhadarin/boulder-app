@@ -21,7 +21,8 @@ const LABELS = {
   push_ups: "Push-ups",
   interval_rounds: "Rounds",
   interval_levels: "Levels",
-  pallof: "Pallof",
+  pallof: "Pallof (kg)",
+  max_hangs: "Max hangs",
   kilter_v8: "Kilter V8",
   kilter_v7: "Kilter V7",
   kilter_v6: "Kilter V6",
@@ -54,11 +55,21 @@ const DETAIL_LABELS = {
   interval_rounds: "Interval rounds",
   interval_levels: "Interval levels",
   sleep: "Sleep (h)",
+  pallof: "Pallof press",
+  max_hangs: "Max hangs (20 mm)",
   running: "Running (min)",
 };
 const PAIN = { finger_pain: 2, groin_pain: 2, adductors_pain: 2, finger_pain_next_day: 3, groin_stretch_pain: 3 };
 const HIDDEN = new Set(["file", "tags", "example", "pending", "notes", "block"]);
 const TYPE_NAMES = { volume: "Volume", power_endurance: "Power Endurance", limit: "Limit", project: "Project", route: "Rope", technique: "Technique", rehab: "Rehab", daily: "Daily" };
+
+// Pallof press is always on the cable - the table shows only the weight ("3x8 25kg" -> "25").
+const TABLE_VALUE = {
+  pallof: (v) => {
+    const m = String(v).match(/(\d+(?:[.,]\d+)?)\s*kg/i);
+    return m ? m[1].replace(",", ".") : v;
+  },
+};
 
 const label = (key) => LABELS[key] || key.replace(/^note\./, "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
@@ -82,7 +93,7 @@ function nameCell(rec) {
 export async function renderSessions(root, { data, route, go }) {
   if (!data) {
     root.innerHTML = `<header class="screen-head"><h1>Sessions</h1></header>
-      <article class="card empty-card"><h2>No data yet</h2><p>Sync the data file on the Progress tab first.</p></article>`;
+      <article class="card empty-card"><h2>No data yet</h2><p>Sync the data file on the Dashboard tab first.</p></article>`;
     return;
   }
   const all = tables(data.bases, data);
@@ -108,7 +119,11 @@ export async function renderSessions(root, { data, route, go }) {
     const body = t.rows
       .map((r) => {
         const tds = t.columns
-          .map((c, i) => (i === 0 ? `<th scope="row" class="sticky">${c === "file.name" ? nameCell(r) : cell(c, value(r, c))}</th>` : `<td>${cell(c, value(r, c))}</td>`))
+          .map((c, i) => {
+            const v = value(r, c);
+            const shown = TABLE_VALUE[c] && v !== null && v !== undefined && v !== "" ? TABLE_VALUE[c](v) : v;
+            return i === 0 ? `<th scope="row" class="sticky">${c === "file.name" ? nameCell(r) : cell(c, shown)}</th>` : `<td>${cell(c, shown)}</td>`;
+          })
           .join("");
         return `<tr tabindex="0" data-file="${esc(r.file)}"${r.pending ? ' class="pending"' : ""}>${tds}</tr>`;
       })

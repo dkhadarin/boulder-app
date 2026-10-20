@@ -22,7 +22,7 @@ export async function renderWiki(root, { appData, route, go }) {
   if (!notes?.length) {
     root.innerHTML = `<header class="screen-head"><h1>Wiki</h1></header>
       <article class="card empty-card"><h2>No notes yet</h2><p>${
-        appData ? "The data file has no notes yet - sync again after the Mac has updated it." : "Sync the data file on the Progress tab first."
+        appData ? "The data file has no notes yet - sync again after the Mac has updated it." : "Sync the data file on the Dashboard tab first."
       }</p></article>`;
     return;
   }

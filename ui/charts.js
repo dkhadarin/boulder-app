@@ -1,4 +1,4 @@
-// Hand-rolled SVG/HTML charts for the Progress screen (no libraries, works offline).
+// Hand-rolled SVG/HTML charts for the Dashboard screen (no libraries, works offline).
 // Specs: 2px lines, 8px markers with a 2px surface ring, hairline solid grid,
 // bars <= 24px with a 4px rounded data-end, legend for >= 2 series, sparse direct
 // labels, crosshair tooltip, and a table view for every chart.
@@ -92,7 +92,8 @@ function tableView(headers, rows) {
 
 // ---------- line chart ----------
 // series: [{ name, color: "--series-1", points: [{ date, value, text? }] }]
-export function lineChart(host, { series, format = String, thresholds = [], minMax = 5, height = 180, start, end, emptyText, label }) {
+// fit: the y axis hugs the values instead of starting at 0 (body weight).
+export function lineChart(host, { series, format = String, thresholds = [], minMax = 5, height = 180, start, end, emptyText, label, fit = false }) {
   host.textContent = "";
   host.classList.add("chart");
   const active = series.filter((s) => s.points.length);
@@ -123,16 +124,26 @@ export function lineChart(host, { series, format = String, thresholds = [], minM
       x0 = mid - 3 * DAY;
       x1 = mid + 3 * DAY;
     }
-    const top = Math.max(minMax, ...active.flatMap((s) => s.points.map((p) => p.value)), ...thresholds.map((t) => t.value));
-    const { max: yMax, step } = niceScale(top);
+    const values = [...active.flatMap((s) => s.points.map((p) => p.value)), ...thresholds.map((t) => t.value)];
+    let yMin = 0;
+    let yMax;
+    let step;
+    if (fit) {
+      const lo = Math.min(...values);
+      const hi = Math.max(...values);
+      const pad = Math.max(1, (hi - lo) * 0.25);
+      ({ step } = niceScale(hi - lo + 2 * pad));
+      yMin = Math.floor((lo - pad) / step) * step;
+      yMax = Math.ceil((hi + pad) / step) * step;
+    } else ({ max: yMax, step } = niceScale(Math.max(minMax, ...values)));
     const X = (d) => m.l + ((ms(d) - x0) / (x1 - x0)) * (W - m.l - m.r);
-    const Y = (v) => m.t + (1 - v / yMax) * (H - m.t - m.b);
+    const Y = (v) => m.t + (1 - (v - yMin) / (yMax - yMin)) * (H - m.t - m.b);
 
     const root = svg("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": label });
     plot.append(root);
 
-    for (let v = 0; v <= yMax + 1e-9; v += step) {
-      svg("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: v === 0 ? "axis" : "grid" }, root);
+    for (let v = yMin; v <= yMax + 1e-9; v += step) {
+      svg("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: v === yMin ? "axis" : "grid" }, root);
       svg("text", { x: m.l - 6, y: Y(v) + 4, class: "tick", "text-anchor": "end" }, root).textContent = format(+v.toFixed(2));
     }
     const ticks = W < 360 ? 3 : 4;

@@ -1,4 +1,5 @@
-// Progress screen: the content of 01_Dashboard/Progress.md, computed by lib/progress.js.
+// Dashboard screen: the content of 01_Dashboard/Progress.md, computed by lib/progress.js.
+// Calendar first, then goals; strength and body as charts (the tables stay in Obsidian).
 
 import { esc, inline, plain, shortDate, longDate, timeAgo } from "./format.js";
 import { lineChart, barChart } from "./charts.js";
@@ -10,7 +11,7 @@ const ICON = { critical: "!", warning: "!", info: "i" };
 
 export function renderEmpty(root, onSync) {
   root.innerHTML = `
-    <header class="screen-head"><h1>Progress</h1></header>
+    <header class="screen-head"><h1>Dashboard</h1></header>
     <article class="card empty-card">
       <h2>No data yet</h2>
       <p>Import the data file from your vault once. Tap the button and pick
@@ -26,13 +27,14 @@ export function renderProgress(root, model, meta, onSync) {
   root.innerHTML = `
     <header class="screen-head">
       <div>
-        <h1>Progress</h1>
+        <h1>Dashboard</h1>
         <p class="sub">Data from ${esc(longDate(model.updated))} · file from ${esc(timeAgo(meta.fileCreated))} · synced ${esc(timeAgo(meta.importedAt))}${
           meta.pending ? ` · <a href="#log">${meta.pending} ${meta.pending === 1 ? "log" : "logs"} not on the Mac yet</a>` : ""
         }</p>
       </div>
       <button class="btn-small" data-action="sync">Sync</button>
     </header>
+    ${block(model.block, model.today)}
     ${warnings(model.warnings)}
     <section>
       <h2>Goals</h2>
@@ -45,19 +47,18 @@ export function renderProgress(root, model, meta, onSync) {
         <div data-chart="pyramid"></div>
       </article>
     </section>
-    ${block(model.block, model.today)}
     <section>
       <h2>Strength</h2>
-      <article class="card">
-        <h3>Weighted pull-up</h3>
-        <p class="sub">Added weight per session</p>
-        <div data-chart="pullup"></div>
-      </article>
-      ${rows(model.strength, "Target")}
+      ${chartCard("pullup", "Weighted pull-up", "Added weight per session", target(model.strength, /^Weighted Pull-Up/i))}
+      ${chartCard("hangs", "Max hangs 20 mm", "Added weight · training sets and testday", target(model.strength, /^20 ?mm Hang Half/i))}
+      ${chartCard("legraises", "Toes-to-bar & leg raises", "Reps per set", target(model.strength, /^Toes-to-Bar/i))}
+      ${chartCard("lever", "Front lever", "Hold per set in seconds, by variant", target(model.strength, /^Front Lever/i))}
+      ${chartCard("pallof", "Pallof press", "Cable weight", target(model.strength, /^Pallof/i))}
+      ${chartCard("pushups", "Push-ups", "Reps per set", target(model.strength, /^Push-Ups/i))}
     </section>
     <section>
       <h2>Body</h2>
-      ${rows(model.body, "Target")}
+      ${chartCard("weight", "Body weight", "kg · measured on testdays", target(model.body, /^Weight/i), "target")}
       <article class="card">
         <h3>Finger pain</h3>
         <p class="sub">0-10 · limits: 2 during training, 3 the next day</p>
@@ -83,6 +84,21 @@ export function renderProgress(root, model, meta, onSync) {
 }
 
 // ---------- pieces ----------
+function chartCard(name, title, sub, next, nextLabel = "next") {
+  return `
+      <article class="card">
+        <h3>${esc(title)}</h3>
+        <p class="sub">${esc(sub)}${next ? ` · ${nextLabel}: ${inline(next)}` : ""}</p>
+        <div data-chart="${name}"></div>
+      </article>`;
+}
+
+// "Target / next stage" of a row in the Strength or Body table of Progress.md.
+function target(rows, pattern) {
+  const t = rows.find((r) => pattern.test(r.name))?.target;
+  return t && t !== "-" ? t : "";
+}
+
 function warnings(list) {
   if (!list.length) return "";
   return `<div class="alerts">${list
@@ -149,8 +165,8 @@ function block(b, today) {
       <article class="card">
         <h3>${esc(plain(b.name))}</h3>
         <p class="sub">${esc(shortDate(b.start))} - ${esc(shortDate(b.end))} · ${esc(weekText(b))}${b.focus ? ` · ${esc(b.focus)}` : ""}</p>
-        <div class="tiles">${tiles}</div>
         ${calendar(b, today)}
+        <div class="tiles">${tiles}</div>
       </article>
     </section>`;
 }
@@ -194,32 +210,6 @@ function calendar(b, today) {
         <span><i class="cal-key extra">!</i>Extra day</span>
       </div>
     </div>`;
-}
-
-function rows(list, targetLabel) {
-  if (!list.length) return "";
-  return `
-    <article class="card list">
-      ${list
-        .map((r) => {
-          const last = r.entries?.length ? r.entries.at(-1).date : null;
-          const sub = [
-            r.target && r.target !== "-" ? `${targetLabel}: ${inline(r.target)}` : "",
-            last ? `last ${esc(shortDate(last))}` : "",
-          ]
-            .filter(Boolean)
-            .join(" · ");
-          return `
-          <div class="list-row">
-            <div>
-              <div class="list-name">${esc(r.name)}</div>
-              ${sub ? `<div class="list-sub">${sub}</div>` : ""}
-            </div>
-            <div class="list-value">${inline(r.current || "?")}</div>
-          </div>`;
-        })
-        .join("")}
-    </article>`;
 }
 
 // Milestones span years, so they always show the year.
@@ -287,5 +277,61 @@ function charts(root, model) {
     ],
     end,
     emptyText: "No groin values yet - they come with the next session or stretch test.",
+  });
+
+  const ex = model.exercises;
+  const kgSigned = (v) => `${v > 0 ? "+" : ""}${v} kg`;
+  const reps = (v) => `${v}`;
+  lineChart(chart("hangs"), {
+    label: "Max hangs, added weight",
+    series: [
+      { name: "Training", color: "--series-1", points: ex.maxHangs },
+      { name: "Testday half crimp", color: "--series-2", points: ex.hangTest.halfCrimp },
+      { name: "Testday open", color: "--series-3", points: ex.hangTest.open },
+    ],
+    format: kgSigned,
+    minMax: 10,
+    emptyText: "No max hangs yet - they start with the testday and Block 2.",
+  });
+  lineChart(chart("legraises"), {
+    label: "Toes-to-bar and leg raises, reps per set",
+    series: [
+      { name: "Toes-to-bar", color: "--series-1", points: ex.toesToBar.filter((p) => !p.weighted) },
+      { name: "Toes-to-bar + ankle weights", color: "--series-2", points: ex.toesToBar.filter((p) => p.weighted) },
+      { name: "Lying leg raises", color: "--series-3", points: ex.lyingLegRaises },
+    ],
+    format: reps,
+    minMax: 10,
+    emptyText: "No leg raises logged yet.",
+  });
+  const variants = [...new Set(ex.frontLever.map((p) => p.variant))];
+  lineChart(chart("lever"), {
+    label: "Front lever, hold per set",
+    series: variants.map((v, i) => ({ name: v, color: `--series-${(i % 3) + 1}`, points: ex.frontLever.filter((p) => p.variant === v) })),
+    format: (v) => `${v} s`,
+    minMax: 15,
+    emptyText: "No front lever holds logged yet.",
+  });
+  lineChart(chart("pallof"), {
+    label: "Pallof press, cable weight",
+    series: [{ name: "Cable weight", color: "--series-1", points: ex.pallof }],
+    format: (v) => `${v} kg`,
+    minMax: 20,
+    emptyText: "No Pallof press logged yet.",
+  });
+  lineChart(chart("pushups"), {
+    label: "Push-ups, reps per set",
+    series: [{ name: "Reps per set", color: "--series-1", points: ex.pushUps }],
+    format: reps,
+    minMax: 15,
+    emptyText: "No push-ups logged yet.",
+  });
+  lineChart(chart("weight"), {
+    label: "Body weight",
+    series: [{ name: "Weight", color: "--series-1", points: model.weight }],
+    format: (v) => `${v} kg`,
+    fit: true,
+    end,
+    emptyText: "No weight yet - it comes with the testday.",
   });
 }
