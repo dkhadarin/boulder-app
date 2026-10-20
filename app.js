@@ -9,9 +9,10 @@ import { renderProgress, renderEmpty } from "./ui/progress-view.js";
 import { renderLog } from "./ui/log-view.js";
 import { renderStatus } from "./ui/status-view.js";
 import { renderSessions } from "./ui/sessions-view.js";
+import { renderWiki, leaveWiki } from "./ui/wiki-view.js";
 
-const VERSION = "0.8";
-const TABS = ["progress", "sessions", "log", "status"];
+const VERSION = "0.9";
+const TABS = ["progress", "sessions", "log", "wiki", "status"];
 const view = document.getElementById("view");
 const fileInput = document.getElementById("file-input");
 const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
@@ -90,6 +91,7 @@ async function render() {
     button.setAttribute("aria-current", button.dataset.tab === tab ? "page" : "false");
   }
   window.scrollTo(0, 0);
+  if (tab !== "wiki") leaveWiki();
   state.queue = await queue.all();
   if (tab === "progress") {
     if (!state.appData) renderEmpty(view, sync);
@@ -101,6 +103,8 @@ async function render() {
     await renderSessions(view, { data: currentData(), route: rest, go });
   } else if (tab === "log") {
     await renderLog(view, { data: currentData(), today: today(), route: rest, go, modelWith, refresh: render });
+  } else if (tab === "wiki") {
+    await renderWiki(view, { appData: state.appData, route: rest, go });
   } else {
     renderStatus(view, { ...state, onSync: sync, version: VERSION });
   }

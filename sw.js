@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every deploy.
-const VERSION = "v8-thu-pallof";
+const VERSION = "v9-wiki";
 const SHELL = [
   "./",
   "index.html",
@@ -13,6 +13,8 @@ const SHELL = [
   "lib/queue.js",
   "lib/bridge.js",
   "lib/bases.js",
+  "lib/markdown.js",
+  "lib/wiki.js",
   "ui/format.js",
   "ui/charts.js",
   "ui/progress-view.js",
@@ -20,6 +22,7 @@ const SHELL = [
   "ui/forms.js",
   "ui/log-view.js",
   "ui/sessions-view.js",
+  "ui/wiki-view.js",
   "manifest.webmanifest",
   "icons/icon-180.png",
   "icons/icon-192.png",

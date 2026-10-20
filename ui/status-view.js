@@ -19,6 +19,7 @@ export async function renderStatus(root, { appData, importedAt, queue, onSync, v
         ${row("Synced", timeAgo(importedAt))}
         ${d ? row("Sessions / daily notes", `${d.sessions.length} / ${d.dailies.length}`) : ""}
         ${d ? row("Kilter sends", String(d.kilter?.sends?.length ?? 0)) : ""}
+        ${appData ? row("Wiki notes", appData.wiki ? String(appData.wiki.length) : "sync again") : ""}
         ${row("Logs not on the Mac yet", String(open))}
       </article>
       <button class="btn" data-action="sync">Sync from iCloud</button>
