@@ -285,9 +285,10 @@ function charts(root, model) {
   lineChart(chart("hangs"), {
     label: "Max hangs, added weight",
     series: [
-      { name: "Training", color: "--series-1", points: ex.maxHangs },
+      { name: "Half crimp", color: "--series-1", points: ex.maxHangs.filter((p) => p.grip === "half crimp") },
+      { name: "Open", color: "--series-3", points: ex.maxHangs.filter((p) => p.grip === "open") },
       { name: "Testday half crimp", color: "--series-2", points: ex.hangTest.halfCrimp },
-      { name: "Testday open", color: "--series-3", points: ex.hangTest.open },
+      { name: "Testday open", color: "--series-4", points: ex.hangTest.open },
     ],
     format: kgSigned,
     minMax: 10,
