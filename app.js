@@ -11,7 +11,7 @@ import { renderStatus } from "./ui/status-view.js";
 import { renderSessions } from "./ui/sessions-view.js";
 import { renderWiki, leaveWiki } from "./ui/wiki-view.js";
 
-const VERSION = "0.10";
+const VERSION = "0.11";
 const TABS = ["progress", "sessions", "log", "wiki", "status"];
 const view = document.getElementById("view");
 const fileInput = document.getElementById("file-input");

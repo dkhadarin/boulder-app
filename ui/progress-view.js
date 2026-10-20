@@ -58,7 +58,7 @@ export function renderProgress(root, model, meta, onSync) {
     </section>
     <section>
       <h2>Body</h2>
-      ${chartCard("weight", "Body weight", "kg · measured on testdays", target(model.body, /^Weight/i), "target")}
+      ${chartCard("weight", "Body weight", "kg · morning check and testdays", target(model.body, /^Weight/i), "target")}
       <article class="card">
         <h3>Finger pain</h3>
         <p class="sub">0-10 · limits: 2 during training, 3 the next day</p>
@@ -332,6 +332,6 @@ function charts(root, model) {
     format: (v) => `${v} kg`,
     fit: true,
     end,
-    emptyText: "No weight yet - it comes with the testday.",
+    emptyText: "No weight yet - enter it in the morning check.",
   });
 }

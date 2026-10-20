@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every deploy.
-const VERSION = "v10-dashboard";
+const VERSION = "v11-weight";
 const SHELL = [
   "./",
   "index.html",

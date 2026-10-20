@@ -115,7 +115,9 @@ async function share(id) {
 function lastValue(data, form, name, from) {
   if (!data) return null;
   let rows;
-  if (from === "dailies") rows = data.dailies || [];
+  // Body weight: morning checks and testdays, else the profile.
+  if (from === "weight") rows = [...(data.dailies || []), ...(data.assessments || []), { date: "", weight: data.profile?.weight }];
+  else if (from === "dailies") rows = data.dailies || [];
   else {
     const types = form.sessionType ? [form.sessionType] : form.id === "limit" ? ["limit", "project"] : [];
     rows = (data.sessions || []).filter((s) => types.includes(s.type));

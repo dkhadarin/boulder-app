@@ -43,6 +43,7 @@ const LABELS = {
   other: "Other",
   sleep: "Sleep",
   groin_stretch_pain: "Groin stretch",
+  weight: "Weight (kg)",
 };
 // In the detail view there is room for the full names.
 const DETAIL_LABELS = {

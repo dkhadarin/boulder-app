@@ -121,6 +121,7 @@ export const FORMS = {
       { type: "date", name: "date", label: "Date" },
       { type: "scale", name: "finger_pain", label: "Finger pain this morning", from: 0, to: 10, pain: 3, hint: "also counts as next-day pain for yesterday's session" },
       { type: "number", name: "sleep", label: "Sleep", unit: "h", step: 0.5 },
+      { type: "number", name: "weight", label: "Body weight", unit: "kg", step: 0.1, last: true, from: "weight", hint: "in the morning before breakfast · − / + start from the last weight" },
     ],
   },
 };
@@ -264,7 +265,10 @@ const COMPONENTS = {
     };
     const change = (delta) => {
       const v = ctx.get(spec.name);
-      ctx.set(spec.name, Math.max(0, Math.round(((typeof v === "number" ? v : 0) + delta) * 10) / 10));
+      // Empty field: the first tap shows the last logged value (body weight) instead of counting up from 0.
+      const last = spec.last ? Number(ctx.last(spec.name, spec.from)) : NaN;
+      const next = typeof v === "number" ? v + delta : Number.isFinite(last) && last > 0 ? last : delta;
+      ctx.set(spec.name, Math.max(0, Math.round(next * 10) / 10));
       paint();
     };
     minus.addEventListener("click", () => change(-(spec.step || 1)));
@@ -497,7 +501,7 @@ export function missing(form, values) {
   if (form.kind === "home" && !["finger_prehab", "adductors", "mobility", "running", "other", "adductors_detail"].some((k) => filled(values[k]) && values[k] !== false))
     out.push("at least one entry");
   if (form.kind === "home" && values.adductors === true && !filled(values.adductors_pain)) out.push("Groin pain during the adductor exercises");
-  if (form.kind === "morning" && !filled(values.finger_pain) && !filled(values.sleep)) out.push("finger pain or sleep");
+  if (form.kind === "morning" && !["finger_pain", "sleep", "weight"].some((k) => filled(values[k]))) out.push("finger pain, sleep or weight");
   const bad = form.kind === "session" && values.project_name !== undefined && /[\\/:#^[\]|]/.test(values.project_name || "");
   if (bad) out.push("a project name without / : # [ ] |");
   return [...new Set(out)];
