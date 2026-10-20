@@ -49,11 +49,11 @@ export const FORMS = {
     kind: "session",
     sessionType: "power_endurance",
     title: "Power Endurance",
-    day: 5,
+    day: 3,
     fields: [
       ...sessionTop,
-      { type: "heading", label: "Saturday" },
-      { type: "checklist", name: "done", items: [["warm_up", "Warm-up: wrist, fingers, adductor isometrics"], ["new_9s", "Looked at the new 9s from Thursday"]] },
+      { type: "heading", label: "Thursday" },
+      { type: "checklist", name: "done", items: [["warm_up", "Warm-up: wrist, fingers, adductor isometrics"], ["new_9s", "Looked at the new 9s from the Tuesday reset"]] },
       sets("pull_up", "Weighted pull-up", "4x5 +15kg"),
       { type: "levels", name: "interval_levels", label: "Route intervals - level per round" },
       { type: "heading", label: "Core block" },
@@ -67,11 +67,11 @@ export const FORMS = {
     id: "limit",
     kind: "session",
     title: "Limit / Project",
-    day: 3,
+    day: 5,
     fields: [
       ...sessionTop,
       { type: "segment", name: "type", label: "Session", options: ["limit", "project"], labels: ["Limit bouldering", "Projecting"], initial: "limit", required: true },
-      { type: "heading", label: "Thursday" },
+      { type: "heading", label: "Saturday" },
       { type: "checklist", name: "done", items: [["warm_up", "Warm-up: wrist, fingers, adductor isometrics"], ["silent_feet", "Silent Feet + flat angles"]] },
       { type: "heading", label: "Sends" },
       { type: "stepper", name: "kilter_v8", label: "Kilter V8", initial: 0 },
@@ -83,6 +83,7 @@ export const FORMS = {
       { type: "heading", label: "Core block" },
       sets("toes_to_bar", "Toes-to-bar (slow)", "3x8"),
       sets("pallof", "Pallof press (cable)", "3x8 25kg"),
+      sets("front_lever", "Front lever", "3x10s one leg straight"),
       ...sessionBottom,
     ],
   },
@@ -251,10 +252,11 @@ const COMPONENTS = {
   number(spec, ctx) {
     const box = el("div", "stepper");
     const input = el("input", "step-value");
-    input.type = "number";
+    // Text, not type=number: in German / Russian the iPhone decimal pad has a comma, and a
+    // number field then reads as empty. "71,4" and "71.4" both count.
+    input.type = "text";
     input.inputMode = "decimal";
-    input.step = String(spec.step || 1);
-    input.min = "0";
+    input.autocomplete = "off";
     input.setAttribute("aria-label", spec.label);
     const minus = el("button", "step-btn", "−");
     const plus = el("button", "step-btn", "+");
@@ -273,7 +275,10 @@ const COMPONENTS = {
     };
     minus.addEventListener("click", () => change(-(spec.step || 1)));
     plus.addEventListener("click", () => change(spec.step || 1));
-    input.addEventListener("input", () => ctx.set(spec.name, input.value === "" ? null : Number(input.value)));
+    input.addEventListener("input", () => {
+      const n = Number(input.value.trim().replace(",", "."));
+      ctx.set(spec.name, input.value.trim() === "" || !Number.isFinite(n) || n < 0 ? null : n);
+    });
     const unit = el("span", "step-unit", spec.unit || "");
     box.append(minus, input, plus, unit);
     paint();

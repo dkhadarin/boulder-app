@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every deploy.
-const VERSION = "v12-core";
+const VERSION = "v13-saturday";
 const SHELL = [
   "./",
   "index.html",
